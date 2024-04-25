@@ -7,37 +7,33 @@ library(utilTM)
 library(boot)
 
 
-###读入数据
-raw = read.csv("allgps.csv")###数据必须按照以下方式排列：每只动物每天的数据按顺序排列
+###load data
+raw = read.csv("allgps.csv")###The data must be arranged in the following way: The data for each animal is arranged in order for each day
 head(raw)
 data = raw
 #raw = na.omit(raw)
-
-
 
 ###time transform
   data$time = as.POSIXct(data$time,TZ = "UTC+8",format = "%Y/%m/%d %H:%M")
   head(data)
   
-  
-###转换为投影坐标
-  # 创建SpatialPoints对象，使用原始经纬度坐标系(WGS84)
-  #points <- SpatialPoints(data[, c("lon", "lat")], proj4string = CRS("+proj=longlat + datum=WGS84"))
-    # 定义投影坐标系（此处以EPSG 3857为例）
-  #projection <- CRS("+init=EPSG:3857")
-    # 转换为投影坐标系
+###Convert to projection coordinates
+###Create SpatialPoints objects using the original latitude and longitude coordinate system (WGS84)  #points <- SpatialPoints(data[, c("lon", "lat")], proj4string = CRS("+proj=longlat + datum=WGS84"))
+    # Define the projection coordinate system (here EPSG 3857 is used as an example)
+projection <- CRS("+init=EPSG:3857")
+    # Convert to a projection coordinate system
   #proj_points <- spTransform(points, projection)
-    # 提取转换后的坐标
+    # Extract the converted coordinates
   #data$x = coordinates(proj_points)[, 1]
   #data$y = coordinates(proj_points)[, 2]
   #head(data)
 
-###打断数据（需要utilTM包,github下载） 
+###Interrupt data (utilTM package required,github download) 
   #plot(table(diff(data$time)),xlim = c(0,3000))
   data = split_ts(data = data, max_interval = 60*10, min_ts_length = 0,units = "min")
   ggplot(data,aes(lon,lat,col = ID_split))+geom_point(size = 0.5)+geom_path()
 
-###中断的数据补足
+###Make up for interrupted data
 #xy = data11[,c("x","y")]
 #datana = setNA(ltraj = as.ltraj(xy,date = data11$time,id = data11$ID,burst = data11$time),data.ref = data11$time[-1,],dt = 10,tol = 5,unis = "min")
 
