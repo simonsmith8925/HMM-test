@@ -1,0 +1,54 @@
+library(momentuHMM)
+library(adehabitatLT)
+library(ggplot2)
+library(sp)
+library(sf)
+library(utilTM)
+library(boot)
+
+
+###读入数据
+raw = read.csv("allgps.csv")###数据必须按照以下方式排列：每只动物每天的数据按顺序排列
+head(raw)
+data = raw
+#raw = na.omit(raw)
+
+
+
+###time transform
+  data$time = as.POSIXct(data$time,TZ = "UTC+8",format = "%Y/%m/%d %H:%M")
+  head(data)
+  
+  
+###转换为投影坐标
+  # 创建SpatialPoints对象，使用原始经纬度坐标系(WGS84)
+  #points <- SpatialPoints(data[, c("lon", "lat")], proj4string = CRS("+proj=longlat + datum=WGS84"))
+    # 定义投影坐标系（此处以EPSG 3857为例）
+  #projection <- CRS("+init=EPSG:3857")
+    # 转换为投影坐标系
+  #proj_points <- spTransform(points, projection)
+    # 提取转换后的坐标
+  #data$x = coordinates(proj_points)[, 1]
+  #data$y = coordinates(proj_points)[, 2]
+  #head(data)
+
+###打断数据（需要utilTM包,github下载） 
+  #plot(table(diff(data$time)),xlim = c(0,3000))
+  data = split_ts(data = data, max_interval = 60*10, min_ts_length = 0,units = "min")
+  ggplot(data,aes(lon,lat,col = ID_split))+geom_point(size = 0.5)+geom_path()
+
+###中断的数据补足
+#xy = data11[,c("x","y")]
+#datana = setNA(ltraj = as.ltraj(xy,date = data11$time,id = data11$ID,burst = data11$time),data.ref = data11$time[-1,],dt = 10,tol = 5,unis = "min")
+
+data_hmm1 = prepData(data,type = "LL",coordNames = c("lon","lat"),covNames = "sp")
+a = hist(data_hmm1$step)
+b = hist(data_hmm1$angle)
+whichzero <- which(data_hmm1$step == 0)
+# Proportion of steps of length zero in the data set
+length(whichzero)/nrow(data_hmm1)
+dist = list(step = "gamma", angle = "vm")
+stepPar0 <- c(0,1,0.01,0.15)
+anglePar0 <- c(pi/2,0)
+hmm1 = fitHMM(data_hmm1, nbStates = 2,dist = dist,Par0 = list(step = stepPar0, angle = anglePar0))
+summary(hmm1)
